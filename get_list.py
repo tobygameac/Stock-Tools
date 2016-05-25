@@ -15,49 +15,41 @@ def GetID(s):
         return strs[2]
     return ''
 
-html_filename = 'list.html'
-text_filename = 'list.txt'
 
-print 'output html in : ' + html_filename
+html_text = StringIO()
 
-with open(html_filename, 'wb') as f:
-    c = pycurl.Curl()
-    c.setopt(c.URL, 'http://www.emega.com.tw/js/StockTable.htm')
-    c.setopt(c.WRITEDATA, f)
-    c.setopt(c.FOLLOWLOCATION, True)
-    c.perform()
-    c.close()
+c = pycurl.Curl()
+c.setopt(c.URL, 'http://www.emega.com.tw/js/StockTable.htm')
+c.setopt(c.WRITEFUNCTION, html_text.write)
+c.setopt(c.FOLLOWLOCATION, True)
+c.perform()
+c.close()
 
-html = open(html_filename)
-lines = html.readlines()
-html.close()
+lines = html_text.getvalue().split('\n')
+
 lines_count = len(lines)
 
-print 'output text in : ' + text_filename
+list_file_path = 'list.txt'
 
-with open(text_filename, 'w') as list_text_file:
+with open(list_file_path, 'w') as list_file:
     for i in range(lines_count):
         stock_id = GetID(lines[i])
         if stock_id != '':
             google_stock_url = 'http://finance.google.com/finance/info?client=ig&q=TPE:' + str(stock_id)
-            storage = StringIO()
             got_html = False
             while not got_html:
                 try:
                     c = pycurl.Curl()
                     c.setopt(c.URL, google_stock_url)
-                    c.setopt(c.WRITEFUNCTION, storage.write)
                     c.setopt(c.FOLLOWLOCATION, True)
+                    c.setopt(pycurl.WRITEFUNCTION, lambda x: None)
                     c.perform()
                     response_code = c.getinfo(pycurl.HTTP_CODE)
                     c.close()
                     if response_code == 200:
-                        list_text_file.write(stock_id + '\n')
-                        print stock_id
+                        list_file.write(stock_id + '\n')
                     got_html = True
                 except:
-                    print 'try again : ' + stock_id
                     continue
-    list_text.close()
 
-print 'done'
+    list_file.write('00632R\n')
