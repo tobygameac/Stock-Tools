@@ -18,6 +18,8 @@ def GetID(s):
 
 html_text = StringIO()
 
+#twse : http://isin.twse.com.tw/isin/C_public.jsp?strMode=2
+
 c = pycurl.Curl()
 c.setopt(c.URL, 'http://www.emega.com.tw/js/StockTable.htm')
 c.setopt(c.WRITEFUNCTION, html_text.write)
@@ -32,8 +34,13 @@ lines_count = len(lines)
 list_file_path = 'list.txt'
 
 with open(list_file_path, 'w') as list_file:
-    for i in range(lines_count):
-        stock_id = GetID(lines[i])
+
+    list_file.write('0050\n')
+    list_file.write('0056\n')
+    #for i in range(lines_count):
+        #stock_id = GetID(lines[i])
+    for i in range(1000, 10000):
+        stock_id = str(i).zfill(4)
         if stock_id != '':
             google_stock_url = 'http://finance.google.com/finance/info?client=ig&q=TPE:' + str(stock_id)
             got_html = False
@@ -53,3 +60,6 @@ with open(list_file_path, 'w') as list_file:
                     continue
 
     list_file.write('00632R\n')
+
+print 'Done.'
+#raw_input()
