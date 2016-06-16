@@ -16,7 +16,7 @@ int main() {
   twse_dividend_file.close();
 
   std::ofstream stock_information_file("information.txt");
-  std::ifstream stock_list_file("list.txt");
+  std::ifstream stock_list_file("..\\list.txt");
   while (stock_list_file >> stock_id) {
     stock_information_file << stock_id << "\t" << stocks_name[stock_id] << "\t" << stocks_per[stock_id] << "\t" << stocks_dividend[stock_id] << "\t" << stocks_pbr[stock_id] << "\n";
   }
