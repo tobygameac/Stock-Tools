@@ -74,9 +74,10 @@ for stock_id in stock_ids:
                         if is_the_first_month:
                             if line_date <= last_date_in_file:
                                 is_new_date = False
-                                print 'Skipped : ' + str(line_date)
+                                #print 'Skipped : ' + str(line_date)
 
                         if is_new_date:
+                            print 'Added : ' + str(line_date)
                             output_line = ''
                             for column in range(8):
                                 output_line = output_line + csv_line[column] + ' '

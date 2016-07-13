@@ -11,7 +11,6 @@ os.system('technical_analysis.py')
 
 records_directory = 'price_records\\'
 
-
 with open(records_directory + '0050.txt', 'r') as records_file:
     lines = records_file.readlines()
     tokens = lines[-1].replace('/', ' ').split(' ')
@@ -25,7 +24,7 @@ month = trade_date.month
 day = trade_date.day
 date_str = str(year) + '-' + str(month) + '-' + str(day)
 
-output_directory = str(year) + str(month).zfill(2) + str(day).zfill(2) + '\\'
+output_directory = 'basic_information\\'
 
 if not os.path.exists(output_directory):
     os.makedirs(output_directory)
@@ -46,7 +45,7 @@ stock_list_file_path = 'list.txt'
 with open(stock_list_file_path) as stock_list_file:
     stock_ids = stock_list_file.readlines()
 
-result_file_path = output_directory + 'basic_information.txt'
+result_file_path = output_directory + str(year) + str(month).zfill(2) + str(day).zfill(2) + '.txt'
 with open(result_file_path, 'w') as result_file:
     for stock_id in stock_ids:
         
@@ -144,36 +143,22 @@ with open(result_file_path, 'w') as result_file:
 
         with open(ma_path, 'r') as ma_file:
             lines = ma_file.readlines()
-            if len(lines) >= 20:
+            if len(lines) >= 60:
                 tokens = lines[-4].split(' ')
-                ma_5_1 = float(tokens[1])
-                ma_10_1 = float(tokens[2])
-                ma_20_1 = float(tokens[3])
-                tokens = lines[-3].split(' ')
-                ma_5_2 = float(tokens[1])
-                ma_10_2 = float(tokens[2])
-                ma_20_2 = float(tokens[3])
-                tokens = lines[-2].split(' ')
-                ma_5_3 = float(tokens[1])
-                ma_10_3 = float(tokens[2])
-                ma_20_3 = float(tokens[3])
-                tokens = lines[-1].split(' ')
-                ma_5_4 = float(tokens[1])
-                ma_10_4 = float(tokens[2])
-                ma_20_4 = float(tokens[3])
+                ma_5 = float(tokens[1])
+                ma_10 = float(tokens[2])
+                ma_20 = float(tokens[3])
+                ma_60 = float(tokens[4])
 
-                ma_good = (close_price < ma_5_3) and (close_price > ma_5_4)
+                ma_good = (close_price >= ma_60) and (close_price >= ma_20) and (close_price >= ma_5)
 
-                ma_good = ma_good or ((ma_5_4 > ma_5_3) and (ma_5_1 < ma_20_1) and (ma_5_2 < ma_20_2) and (ma_5_3 > ma_20_3) and (ma_5_4 > ma_20_4))
-
-                ma_good = ma_good or ((ma_5_4 > ma_5_3) and (ma_5_1 < ma_10_1) and (ma_5_2 < ma_10_2) and (ma_5_3 > ma_10_3) and (ma_5_4 > ma_10_4))
+                ma_good = ma_good and (ma_5 >= ma_10) and (ma_10 >= ma_20)
 
         kd_path = records_directory + str(stock_id) + '_kd.txt'
 
         kd_good = False
 
-        
-        kd_frames = 40;
+        kd_frames = 35;
 
         with open(kd_path, 'r') as kd_file:
             lines = kd_file.readlines()

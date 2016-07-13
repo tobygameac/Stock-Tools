@@ -19,6 +19,7 @@ def GetID(s):
 html_text = StringIO()
 
 #twse : http://isin.twse.com.tw/isin/C_public.jsp?strMode=2
+#       http://isin.twse.com.tw/isin/C_public.jsp?strMode=4
 
 c = pycurl.Curl()
 c.setopt(c.URL, 'http://www.emega.com.tw/js/StockTable.htm')
