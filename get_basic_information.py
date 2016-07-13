@@ -52,27 +52,27 @@ with open(result_file_path, 'w') as result_file:
         stock_id = stock_id.rstrip()
         print 'Fetching : ' + stock_id
 
-        html_text = StringIO()
+        url_text = StringIO()
 
         #google_stock_url = 'http://finance.google.com/finance/info?client=ig&q=TPE:' + stock_id
 
         
-        #got_html = false
-        #while not got_html:
+        #got_good_response = false
+        #while not got_good_response:
         #    try:
         #        c = pycurl.curl()
         #        c.setopt(c.url, google_stock_url)
-        #        c.setopt(c.writefunction, html_text.write)
+        #        c.setopt(c.writefunction, url_text.write)
         #        c.setopt(c.followlocation, true)
         #        c.perform()
         #        response_code = c.getinfo(pycurl.http_code)
         #        c.close()
-        #        got_html = true
+        #        got_good_response = true
         #    except:
         #        continue
 
         #if response_code == 200:
-        #    google_stock_json_str = html_text.getvalue()[6:-3]
+        #    google_stock_json_str = url_text.getvalue()[6:-3]
         #    google_stock_data = json.loads(google_stock_json_str)
 
         #    price = google_stock_data['l_fix']
@@ -87,21 +87,21 @@ with open(result_file_path, 'w') as result_file:
             low_price = tokens[5]
             close_price = tokens[6]
 
-        got_html = False
-        while not got_html:
+        got_good_response = False
+        while not got_good_response:
             try:
                 c = pycurl.Curl()
                 #c.setopt(c.URL, 'http://jsjustweb.jihsun.com.tw/z/zc/zco/zco.djhtm?a=' + stock_id + '&b=' + str(check_days))
                 c.setopt(c.URL, 'http://jdata.yuanta.com.tw/z/zc/zco/zco.djhtm?a=' + stock_id + '&b=' + str(check_days))
-                c.setopt(c.WRITEFUNCTION, html_text.write)
+                c.setopt(c.WRITEFUNCTION, url_text.write)
                 c.setopt(c.FOLLOWLOCATION, True)
                 c.perform()
                 c.close()
-                got_html = True
+                got_good_response = True
             except:
               continue
 
-        lines = html_text.getvalue().split('\n')
+        lines = url_text.getvalue().split('\n')
         length = len(lines)
         for i in range(length):
             if GetLineValue(lines[i]) == '合計買超張數':
@@ -114,21 +114,21 @@ with open(result_file_path, 'w') as result_file:
                 sell_price = GetLineValue(lines[i + 1])
                 break;
 
-        got_html = False
-        while not got_html:
+        got_good_response = False
+        while not got_good_response:
             try:
                 c = pycurl.Curl()
                 #c.setopt(c.URL, 'http://jsjustweb.jihsun.com.tw/z/zc/zcl/zcl.djhtm?a=' + stock_id + '&c=' + date_str + '&d=' + date_str)
                 c.setopt(c.URL, 'http://jdata.yuanta.com.tw/z/zc/zcl/zcl.djhtm?a=' + stock_id + '&c=' + date_str + '&d=' + date_str)
-                c.setopt(c.WRITEFUNCTION, html_text.write)
+                c.setopt(c.WRITEFUNCTION, url_text.write)
                 c.setopt(c.FOLLOWLOCATION, True)
                 c.perform()
                 c.close()
-                got_html = True
+                got_good_response = True
             except:
               continue
 
-        lines = html_text.getvalue().split('\n')
+        lines = url_text.getvalue().split('\n')
         length = len(lines)
         for i in range(length):
             if GetLineValue(lines[i]) == '合計買賣超':
