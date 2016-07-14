@@ -11,7 +11,9 @@ pool_size = 128
 
 records_directory = 'price_records\\'
 
-date_str = ''
+def PoolInitilizer(trade_date):
+    global date_str
+    date_str = str(trade_date.year) + '-' + str(trade_date.month) + '-' + str(trade_date.day)
 
 def GetLineValue(s):
     strs = s.replace('>', '<').split('<')
@@ -24,6 +26,7 @@ def GetLineValue(s):
         return ''
 
 def FetchInformation(stock_id):
+
     stock_id = stock_id.rstrip()
     print 'Fetching : ' + stock_id
 
@@ -159,18 +162,6 @@ if __name__ == '__main__':
     os.system('price_records.py')
     os.system('technical_analysis.py')
 
-    with open(records_directory + '0050.txt', 'r') as records_file:
-        lines = records_file.readlines()
-        tokens = lines[-1].replace('/', ' ').split(' ')
-        last_date_in_file = datetime.date(int(tokens[0]), int(tokens[1]), int(tokens[2]))
-
-    trade_date = last_date_in_file
-
-    year = trade_date.year
-    month = trade_date.month
-    day = trade_date.day
-    date_str = str(year) + '-' + str(month) + '-' + str(day)
-
     output_directory = 'basic_information\\'
 
     if not os.path.exists(output_directory):
@@ -184,14 +175,22 @@ if __name__ == '__main__':
     with open(stock_list_file_path) as stock_list_file:
         stock_ids.extend(stock_list_file.readlines())
 
-    pool = Pool(pool_size)
+
+    with open(records_directory + '0050.txt', 'r') as records_file:
+        lines = records_file.readlines()
+        tokens = lines[-1].replace('/', ' ').split(' ')
+        last_date_in_file = datetime.date(int(tokens[0]), int(tokens[1]), int(tokens[2]))
+
+    trade_date = last_date_in_file
+
+    pool = Pool(pool_size, PoolInitilizer, (trade_date, ))
     informations = pool.map(FetchInformation, stock_ids)
 
-    result_file_path = output_directory + str(year) + str(month).zfill(2) + str(day).zfill(2) + '.txt'
+    result_file_path = output_directory + str(trade_date.year) + str(trade_date.month).zfill(2) + str(trade_date.day).zfill(2) + '.txt'
     with open(result_file_path, 'w') as result_file:
         for information in informations:
-            for token in information:
+            for token in information[ : -1]:
                 result_file.write(str(token) + '\t')
-            result_file.write('\n')
+            result_file.write(information[-1] + '\n')
             
     print 'Done : get basic information'
