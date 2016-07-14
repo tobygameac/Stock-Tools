@@ -4,30 +4,14 @@ import json
 import os
 import pycurl
 
+from multiprocessing import Pool
 from StringIO import StringIO
 
-os.system('price_records.py')
-os.system('technical_analysis.py')
+pool_size = 128
 
 records_directory = 'price_records\\'
 
-with open(records_directory + '0050.txt', 'r') as records_file:
-    lines = records_file.readlines()
-    tokens = lines[-1].replace('/', ' ').split(' ')
-    last_date_in_file = datetime.date(int(tokens[0]), int(tokens[1]), int(tokens[2]))
-
-#trade_date = datetime.datetime.now()
-trade_date = last_date_in_file
-
-year = trade_date.year
-month = trade_date.month
-day = trade_date.day
-date_str = str(year) + '-' + str(month) + '-' + str(day)
-
-output_directory = 'basic_information\\'
-
-if not os.path.exists(output_directory):
-    os.makedirs(output_directory)
+date_str = ''
 
 def GetLineValue(s):
     strs = s.replace('>', '<').split('<')
@@ -39,143 +23,175 @@ def GetLineValue(s):
     except:
         return ''
 
-check_days = 1
+def FetchInformation(stock_id):
+    stock_id = stock_id.rstrip()
+    print 'Fetching : ' + stock_id
 
-stock_list_file_path = 'list.txt'
-with open(stock_list_file_path) as stock_list_file:
-    stock_ids = stock_list_file.readlines()
+    url_text = StringIO()
 
-result_file_path = output_directory + str(year) + str(month).zfill(2) + str(day).zfill(2) + '.txt'
-with open(result_file_path, 'w') as result_file:
-    for stock_id in stock_ids:
-        
-        stock_id = stock_id.rstrip()
-        print 'Fetching : ' + stock_id
+    #google_stock_url = 'http://finance.google.com/finance/info?client=ig&q=TPE:' + stock_id
 
-        url_text = StringIO()
+    
+    #got_good_response = false
+    #while not got_good_response:
+    #    try:
+    #        c = pycurl.curl()
+    #        c.setopt(c.url, google_stock_url)
+    #        c.setopt(c.writefunction, url_text.write)
+    #        c.setopt(c.followlocation, true)
+    #        c.perform()
+    #        response_code = c.getinfo(pycurl.http_code)
+    #        c.close()
+    #        got_good_response = true
+    #    except:
+    #        continue
 
-        #google_stock_url = 'http://finance.google.com/finance/info?client=ig&q=TPE:' + stock_id
+    #if response_code == 200:
+    #    google_stock_json_str = url_text.getvalue()[6:-3]
+    #    google_stock_data = json.loads(google_stock_json_str)
 
-        
-        #got_good_response = false
-        #while not got_good_response:
-        #    try:
-        #        c = pycurl.curl()
-        #        c.setopt(c.url, google_stock_url)
-        #        c.setopt(c.writefunction, url_text.write)
-        #        c.setopt(c.followlocation, true)
-        #        c.perform()
-        #        response_code = c.getinfo(pycurl.http_code)
-        #        c.close()
-        #        got_good_response = true
-        #    except:
-        #        continue
+    #    price = google_stock_data['l_fix']
 
-        #if response_code == 200:
-        #    google_stock_json_str = url_text.getvalue()[6:-3]
-        #    google_stock_data = json.loads(google_stock_json_str)
+    records_path = records_directory + str(stock_id) + '.txt'
 
-        #    price = google_stock_data['l_fix']
+    with open(records_path, 'r') as records_file:
+        lines = records_file.readlines()
+        tokens = lines[-1].split(' ')
+        start_price = tokens[3]
+        high_price = tokens[4]
+        low_price = tokens[5]
+        close_price = tokens[6]
 
-        records_path = records_directory + str(stock_id) + '.txt'
+    got_good_response = False
+    while not got_good_response:
+        try:
+            c = pycurl.Curl()
+            #c.setopt(c.URL, 'http://jsjustweb.jihsun.com.tw/z/zc/zco/zco.djhtm?a=' + stock_id + '&b=1')
+            c.setopt(c.URL, 'http://jdata.yuanta.com.tw/z/zc/zco/zco.djhtm?a=' + stock_id + '&b=1')
+            #c.setopt(c.URL, 'http://5850web.moneydj.com/z/zc/zco/zco.djhtm?a=' + stock_id + '&b=1')
+            c.setopt(c.WRITEFUNCTION, url_text.write)
+            c.setopt(c.FOLLOWLOCATION, True)
+            c.perform()
+            c.close()
+            got_good_response = True
+        except:
+          print c.getinfo(pycurl.HTTP_CODE)
+          continue
 
-        with open(records_path, 'r') as records_file:
-            lines = records_file.readlines()
-            tokens = lines[-1].split(' ')
-            start_price = tokens[3]
-            high_price = tokens[4]
-            low_price = tokens[5]
-            close_price = tokens[6]
+    buy_amount = sell_amount = buy_price = sell_price = '0'
 
-        got_good_response = False
-        while not got_good_response:
-            try:
-                c = pycurl.Curl()
-                #c.setopt(c.URL, 'http://jsjustweb.jihsun.com.tw/z/zc/zco/zco.djhtm?a=' + stock_id + '&b=' + str(check_days))
-                c.setopt(c.URL, 'http://jdata.yuanta.com.tw/z/zc/zco/zco.djhtm?a=' + stock_id + '&b=' + str(check_days))
-                c.setopt(c.WRITEFUNCTION, url_text.write)
-                c.setopt(c.FOLLOWLOCATION, True)
-                c.perform()
-                c.close()
-                got_good_response = True
-            except:
-              continue
+    lines = url_text.getvalue().split('\n')
+    length = len(lines)
+    for i in range(length):
+        if GetLineValue(lines[i]) == '合計買超張數':
+            buy_amount = GetLineValue(lines[i + 1])
+        elif GetLineValue(lines[i]) == '合計賣超張數':
+            sell_amount = GetLineValue(lines[i + 1])
+        elif GetLineValue(lines[i]) == '平均買超成本':
+            buy_price = GetLineValue(lines[i + 1])
+        elif GetLineValue(lines[i]) == '平均賣超成本':
+            sell_price = GetLineValue(lines[i + 1])
+            break;
 
-        lines = url_text.getvalue().split('\n')
-        length = len(lines)
-        for i in range(length):
-            if GetLineValue(lines[i]) == '合計買超張數':
-                buy_amount = GetLineValue(lines[i + 1])
-            elif GetLineValue(lines[i]) == '合計賣超張數':
-                sell_amount = GetLineValue(lines[i + 1])
-            elif GetLineValue(lines[i]) == '平均買超成本':
-                buy_price = GetLineValue(lines[i + 1])
-            elif GetLineValue(lines[i]) == '平均賣超成本':
-                sell_price = GetLineValue(lines[i + 1])
-                break;
+    got_good_response = False
+    while not got_good_response:
+        try:
+            c = pycurl.Curl()
+            #c.setopt(c.URL, 'http://jsjustweb.jihsun.com.tw/z/zc/zcl/zcl.djhtm?a=' + stock_id + '&c=' + date_str + '&d=' + date_str)
+            c.setopt(c.URL, 'http://jdata.yuanta.com.tw/z/zc/zcl/zcl.djhtm?a=' + stock_id + '&c=' + date_str + '&d=' + date_str)
+            #c.setopt(c.URL, 'http://5850web.moneydj.com/z/zc/zcl/zcl.djhtm?a=' + stock_id + '&c=' + date_str + '&d=' + date_str)
+            c.setopt(c.WRITEFUNCTION, url_text.write)
+            c.setopt(c.FOLLOWLOCATION, True)
+            c.perform()
+            c.close()
+            got_good_response = True
+        except:
+          continue
 
-        got_good_response = False
-        while not got_good_response:
-            try:
-                c = pycurl.Curl()
-                #c.setopt(c.URL, 'http://jsjustweb.jihsun.com.tw/z/zc/zcl/zcl.djhtm?a=' + stock_id + '&c=' + date_str + '&d=' + date_str)
-                c.setopt(c.URL, 'http://jdata.yuanta.com.tw/z/zc/zcl/zcl.djhtm?a=' + stock_id + '&c=' + date_str + '&d=' + date_str)
-                c.setopt(c.WRITEFUNCTION, url_text.write)
-                c.setopt(c.FOLLOWLOCATION, True)
-                c.perform()
-                c.close()
-                got_good_response = True
-            except:
-              continue
+    lines = url_text.getvalue().split('\n')
+    length = len(lines)
+    for i in range(length):
+        if GetLineValue(lines[i]) == '合計買賣超':
+            fi_buy = GetLineValue(lines[i + 1])
+            it_buy = GetLineValue(lines[i + 2])
+            dealer_buy = GetLineValue(lines[i + 3])
+            break;
 
-        lines = url_text.getvalue().split('\n')
-        length = len(lines)
-        for i in range(length):
-            if GetLineValue(lines[i]) == '合計買賣超':
-                fi_buy = GetLineValue(lines[i + 1])
-                it_buy = GetLineValue(lines[i + 2])
-                dealer_buy = GetLineValue(lines[i + 3])
-                break;
+    ma_path = records_directory + str(stock_id) + '_ma.txt'
 
-        ma_path = records_directory + str(stock_id) + '_ma.txt'
+    ma_good = False
 
-        ma_good = False
+    with open(ma_path, 'r') as ma_file:
+        lines = ma_file.readlines()
+        if len(lines) >= 60:
+            tokens = lines[-4].split(' ')
+            ma_5 = float(tokens[1])
+            ma_10 = float(tokens[2])
+            ma_20 = float(tokens[3])
+            ma_60 = float(tokens[4])
 
-        with open(ma_path, 'r') as ma_file:
-            lines = ma_file.readlines()
-            if len(lines) >= 60:
-                tokens = lines[-4].split(' ')
-                ma_5 = float(tokens[1])
-                ma_10 = float(tokens[2])
-                ma_20 = float(tokens[3])
-                ma_60 = float(tokens[4])
+            ma_good = (close_price >= ma_60) and (close_price >= ma_20) and (close_price >= ma_5)
 
-                ma_good = (close_price >= ma_60) and (close_price >= ma_20) and (close_price >= ma_5)
+            ma_good = ma_good and (ma_5 >= ma_10) and (ma_10 >= ma_20)
 
-                ma_good = ma_good and (ma_5 >= ma_10) and (ma_10 >= ma_20)
+    kd_path = records_directory + str(stock_id) + '_kd.txt'
 
-        kd_path = records_directory + str(stock_id) + '_kd.txt'
+    kd_good = False
 
-        kd_good = False
+    kd_frames = 35;
 
-        kd_frames = 35;
+    with open(kd_path, 'r') as kd_file:
+        lines = kd_file.readlines()
+        for check_days in range(1):
+            if len(lines) >= 2 + check_days:
+                tokens = lines[-2 - check_days].split(' ')
+                previous_k = float(tokens[2])
+                previous_d = float(tokens[3])
+                tokens = lines[-1 - check_days].split(' ')
+                current_k = float(tokens[2])
+                cuttent_d = float(tokens[3])
+                kd_good = kd_good or ((previous_k < previous_d) and (current_k > cuttent_d) and (current_k > previous_k) and (current_k < kd_frames))
 
-        with open(kd_path, 'r') as kd_file:
-            lines = kd_file.readlines()
-            for check_days in range(1):
-                if len(lines) >= 2 + check_days:
-                    tokens = lines[-2 - check_days].split(' ')
-                    previous_k = float(tokens[2])
-                    previous_d = float(tokens[3])
-                    tokens = lines[-1 - check_days].split(' ')
-                    current_k = float(tokens[2])
-                    cuttent_d = float(tokens[3])
-                    kd_good = kd_good or ((previous_k < previous_d) and (current_k > cuttent_d) and (current_k > previous_k) and (current_k < kd_frames))
+    return stock_id, close_price, buy_amount, sell_amount, buy_price, sell_price, fi_buy, it_buy, dealer_buy, start_price, high_price, low_price, str(ma_good), str(kd_good)
 
-        result_file.write(stock_id + '\t' + close_price + '\t' + buy_amount + '\t' + sell_amount + '\t' + buy_price + '\t' + sell_price + '\t')
-        result_file.write(fi_buy + '\t' + it_buy + '\t' + dealer_buy + '\t')
-        result_file.write(start_price + '\t' + high_price + '\t' + low_price + '\t')
-        result_file.write(str(ma_good) + '\t' + str(kd_good) + '\n')
+if __name__ == '__main__':
+    
+    os.system('price_records.py')
+    os.system('technical_analysis.py')
 
-print 'Done.'
-#raw_input()
+    with open(records_directory + '0050.txt', 'r') as records_file:
+        lines = records_file.readlines()
+        tokens = lines[-1].replace('/', ' ').split(' ')
+        last_date_in_file = datetime.date(int(tokens[0]), int(tokens[1]), int(tokens[2]))
+
+    trade_date = last_date_in_file
+
+    year = trade_date.year
+    month = trade_date.month
+    day = trade_date.day
+    date_str = str(year) + '-' + str(month) + '-' + str(day)
+
+    output_directory = 'basic_information\\'
+
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+
+    stock_list_file_path = 'list.txt'
+    with open(stock_list_file_path) as stock_list_file:
+        stock_ids = stock_list_file.readlines()
+
+    stock_list_file_path = 'list_otc.txt'
+    with open(stock_list_file_path) as stock_list_file:
+        stock_ids.extend(stock_list_file.readlines())
+
+    pool = Pool(pool_size)
+    informations = pool.map(FetchInformation, stock_ids)
+
+    result_file_path = output_directory + str(year) + str(month).zfill(2) + str(day).zfill(2) + '.txt'
+    with open(result_file_path, 'w') as result_file:
+        for information in informations:
+            for token in information:
+                result_file.write(str(token) + '\t')
+            result_file.write('\n')
+            
+    print 'Done : get basic information'

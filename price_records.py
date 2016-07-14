@@ -6,20 +6,16 @@ import pycurl
 import sys
 import urllib2 
 
+from multiprocessing import Pool
 from StringIO import StringIO
+
+pool_size = 128
 
 records_directory = 'price_records\\'
 
-if not os.path.exists(records_directory):
-    os.makedirs(records_directory)
-
 current_date = datetime.date.today()
 
-stock_list_file_path = 'list.txt'
-with open(stock_list_file_path) as stock_list_file:
-    stock_ids = stock_list_file.readlines()
-
-for stock_id in stock_ids:
+def FetchTWSE(stock_id):
     stock_id = stock_id.rstrip()
     print 'Fetching : ' + stock_id
 
@@ -88,11 +84,7 @@ for stock_id in stock_ids:
                             output_line = output_line + csv_line[8] + '\n'
                             records_file.write(output_line)
 
-stock_list_file_path = 'list_otc.txt'
-with open(stock_list_file_path) as stock_list_file:
-    stock_ids = stock_list_file.readlines()
-
-for stock_id in stock_ids:
+def FetchOTC(stock_id):
     stock_id = stock_id.rstrip()
     print 'Fetching : ' + stock_id
 
@@ -178,4 +170,28 @@ for stock_id in stock_ids:
                             output_line = output_line + csv_line[8] + '\n'
                             records_file.write(output_line)
 
-print 'Done'
+if __name__ == '__main__':
+
+    if not os.path.exists(records_directory):
+        os.makedirs(records_directory)
+
+    stock_list_file_path = 'list.txt'
+    with open(stock_list_file_path) as stock_list_file:
+        stock_ids = stock_list_file.readlines()
+
+    #for stock_id in stock_ids:
+        #FetchTWSE(stock_id)
+
+    pool = Pool(pool_size)
+    pool.map(FetchTWSE, stock_ids)
+
+    stock_list_file_path = 'list_otc.txt'
+    with open(stock_list_file_path) as stock_list_file:
+        stock_ids = stock_list_file.readlines()
+
+    #for stock_id in stock_ids:
+        #FetchOTC(stock_id)
+
+    pool.map(FetchOTC, stock_ids)
+    
+    print 'Done : price records'

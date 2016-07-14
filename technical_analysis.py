@@ -2,16 +2,19 @@ import datetime
 import os
 import sys
 
+from multiprocessing import Pool
+
+pool_size = 5
+
 data_directory = 'price_records\\'
 
-stock_list_file_path = 'list.txt'
-with open(stock_list_file_path) as stock_list_file:
-    stock_ids = stock_list_file.readlines()
+def TechnicalAnalysis(stock_id):
 
-for stock_id in stock_ids:
     stock_id = stock_id.rstrip()
 
-    records_path = data_directory + str(stock_id) + '.txt'
+    #print 'Analysing : ' + stock_id
+
+    records_path = data_directory + stock_id + '.txt'
 
     dates = []
     high = []
@@ -34,8 +37,7 @@ for stock_id in stock_ids:
             high.append(h)
             low.append(l)
             close.append(c)
-
-
+    
     total_days = len(close)
 
     ma_path = data_directory + str(stock_id) + '_ma.txt'
@@ -86,3 +88,27 @@ for stock_id in stock_ids:
             old_d = d
 
             kd_file.write(dates[i] + ' ' + str(round(rsv, 2)) + ' ' + str(round(k, 2)) + ' ' + str(round(d, 2)) + '\n')
+      
+
+if __name__ == '__main__':
+    
+    stock_list_file_path = 'list.txt'
+    with open(stock_list_file_path) as stock_list_file:
+        stock_ids = stock_list_file.readlines()
+
+    stock_list_file_path = 'list_otc.txt'
+    with open(stock_list_file_path) as stock_list_file:
+        stock_ids.extend(stock_list_file.readlines())
+
+    a = datetime.datetime.now()
+
+    #for stock_id in stock_ids:
+        #TechnicalAnalysis(stock_id)
+
+    pool = Pool(pool_size)
+    pool.map(TechnicalAnalysis, stock_ids)
+
+    b = datetime.datetime.now()
+    #print b - a
+
+    print 'Done : technical analysis'
