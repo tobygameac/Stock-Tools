@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import codecs
 import datetime
+import os
 
 from multiprocessing import Pool
 
@@ -9,7 +10,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-pool_size = 6
+pool_size = 12
 
 broker_id = '922H'
 records_directory = 'price_records\\'
@@ -35,9 +36,9 @@ def BrokerAnalysis(stock_id):
 
     values = []
 
-
     try:
         driver = webdriver.Chrome()
+        #driver = webdriver.PhantomJS()
 
         driver.get(url)
         WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.CLASS_NAME, "chart1")))
@@ -61,10 +62,10 @@ def BrokerAnalysis(stock_id):
 
     for line in page_source.split('\n'):
         if '<div class="tex_value24 tex_black">' in line:
-            values.append(int(GetLineValue(line)))
+            values.append(GetLineValue(line))
 
     if len(values) > 5:
-        values = values[ : 2] + values[-2 : ]
+        values = values[ : 2] + values[3 : 5]
     
     if len(values) < 5:
         return []
@@ -94,7 +95,12 @@ if __name__ == '__main__':
     pool = Pool(pool_size, PoolInitilizer, (trade_date, ))
     broker_analysis_values = pool.map(BrokerAnalysis, stock_ids)
 
-    broker_analysis_file_path = 'broker_analysis.txt'
+    output_directory = 'broker_analysis\\'
+
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+
+    broker_analysis_file_path = output_directory + broker_id + '_' + str(trade_date.year) + str(trade_date.month).zfill(2) + str(trade_date.day).zfill(2) + '.txt'
 
     with open(broker_analysis_file_path, 'w') as broker_analysis_file:
         for values in broker_analysis_values:
