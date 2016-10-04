@@ -111,6 +111,8 @@ def FetchInformation(stock_id):
         except:
           continue
 
+    fi_buy = it_buy = dealer_buy = 0
+
     lines = url_text.getvalue().split('\n')
     length = len(lines)
     for i in range(length):

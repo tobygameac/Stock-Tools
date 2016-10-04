@@ -4,7 +4,7 @@ import datetime
 import os
 import pycurl
 import sys
-import urllib2 
+import urllib
 
 from multiprocessing import Pool
 from StringIO import StringIO
@@ -49,22 +49,39 @@ def FetchTWSE(stock_id):
                 is_the_first_month = is_the_first_month and (month == start_month)
 
                 date_str_without_day = str(year) + str(month).zfill(2)
-                url = 'http://www.twse.com.tw/ch/trading/exchange/STOCK_DAY/STOCK_DAY_print.php?genpage=genpage/Report' + date_str_without_day + '/' + date_str_without_day + '_F3_1_8_' + str(stock_id) + '.php&type=csv'
+
+                url = 'http://www.twse.com.tw/ch/trading/exchange/STOCK_DAY/STOCK_DAYMAIN.php'
+
+                values = {
+                    'CO_ID' : stock_id,
+                    'query_year': year,
+                    'query_month': month,
+                    'download': 'csv'
+                }
+
+                post_fields = urllib.urlencode(values)
+
+                url_text = StringIO()
 
                 got_good_response = False
                 while not got_good_response:
                     try:
-                        response = urllib2.urlopen(url)
-                        got_good_response = response.code == 200
+                        c = pycurl.Curl()
+                        c.setopt(c.URL, url)
+                        c.setopt(c.POSTFIELDS, post_fields)
+                        c.setopt(c.WRITEFUNCTION, url_text.write)
+                        c.setopt(c.FOLLOWLOCATION, True)
+                        c.perform()
+                        c.close()
+                        got_good_response = True
                     except:
                         continue
 
-                csv_lines = csv.reader(response)
+                csv_lines = csv.reader(url_text.getvalue().split('\n')[2:])
                 
                 for csv_line in csv_lines:
-                    if len(csv_line) == 9 and csv_line[0][0] == ' ':
-                        csv_line[0] = csv_line[0][1:]
-                        
+                    
+                    if len(csv_line) == 10:
                         is_new_date = True
 
                         tokens = csv_line[0].split('/')
